@@ -42,7 +42,12 @@ const userScheme = mongoose.Schema({
   },
   passwordChangedAt: Date,
   passwordResetToken: String,
-  passwordResetExpire: Date
+  passwordResetExpire: Date,
+  active: {
+    type: Boolean,
+    default: true,
+    select: false
+  }
 });
 
 userScheme.pre('save', async function(next) {
@@ -52,12 +57,23 @@ userScheme.pre('save', async function(next) {
   next();
 });
 
+userScheme.pre('save', function(next) {
+  if (!this.isModified('password') || this.isNew) return next();
+  this.passwordChangedAt = Date.now() - 1000;
+  next();
+});
+
 userScheme.methods.correctPassword = async function(
   candidatePassword,
   userPassword
 ) {
   return await bcrypt.compare(candidatePassword, userPassword);
 };
+
+userScheme.pre(/^find/, function(next) {
+  this.find({ active: { $ne: false } });
+  next();
+});
 
 userScheme.methods.changedPasswordAfter = function(JWTTimestamp) {
   if (this.passwordChangedAt) {

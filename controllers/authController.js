@@ -1,6 +1,32 @@
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 const { promisify } = require('util');
 const User = require('./../models/userModel');
+const sendEmail = require('./../utils/email');
+const { findById } = require('../models/tourModel');
+
+const signToken = id => {
+  return jwt.sign({ id }, process.env.JWT_SECRETE, {
+    expiresIn: process.env.JWT_EXPIRES_IN
+  });
+};
+const createSendToken = (user, statusCode, res) => {
+  const token = signToken(user._id);
+  const cookieOptions = {
+    expires:
+      Date.now() + process.env.JWT_COOKIE_EXPIRES_IN * 24 * 60 * 60 * 1000,
+    hteepOnly: true
+  };
+  if (process.env.NODE_ENV === 'production') cookieOptions.secure = true;
+  res.cookie('jwt', token, cookieOptions);
+  res.status(statusCode).json({
+    status: 'success',
+    token,
+    date: {
+      user
+    }
+  });
+};
 
 exports.signup = async (req, res, next) => {
   try {
@@ -12,17 +38,7 @@ exports.signup = async (req, res, next) => {
       role: req.body.role
     });
 
-    const token = jwt.sign({ id: newUser._id }, process.env.JWT_SECRETE, {
-      expiresIn: process.env.JWT_EXPIRES_IN
-    });
-
-    res.status(200).json({
-      status: 'success',
-      token,
-      data: {
-        user: newUser
-      }
-    });
+    createSendToken(newUser, 200, res);
   } catch (err) {
     console.log(err);
     res.status(500).json({
@@ -45,14 +61,7 @@ exports.login = async (req, res, next) => {
       return next(new Error('Incorrect email or password'));
     }
 
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRETE, {
-      expiresIn: process.env.JWT_EXPIRES_IN
-    });
-
-    res.status(200).json({
-      status: 'success',
-      token
-    });
+    createSendToken(user, 200, res);
   } catch (err) {
     res.status(500).json({
       status: 'error',
@@ -119,9 +128,64 @@ exports.forgetPassword = async (req, res, next) => {
     }
     const resetToken = user.createPasswordResetToken();
     await user.save({ validateBeforeSave: false });
+
+    const resetURL = `${req.protocol};//${req.get(
+      'host'
+    )}/api/v1/users/resetPassword/${resetToken}`;
+
+    try {
+      const message = `Andy new Password is ${resetToken}`;
+      await sendEmail({
+        mail: user.email,
+        subject: 'Your password reset token for 10 mins',
+        text: message
+      });
+
+      res.status(200).json({
+        status: 'success',
+        message: 'Token sent successfully'
+      });
+    } catch (err) {
+      user.passwordResetToken = undefined;
+      user.passwordResetExpire = undefined;
+      res.status(403).json({
+        status: 'fail',
+        message: err.message
+      });
+    }
+  } catch (err) {
+    res.status(403).json({
+      status: 'fail',
+      message: err.message
+    });
+  }
+};
+
+exports.resetPassword = async (req, res, next) => {
+  try {
+    const decodeToken = crypto
+      .createHash('sha256')
+      .update(req.params.token)
+      .digest('hex');
+    const user = await User.findOne({
+      passwordResetToken: decodeToken,
+      passwordResetExpire: { $gt: Date.now() }
+    });
+    if (!user) {
+      return next(new Error('The token us invalid'));
+    }
+    user.password = req.body.password;
+    user.passwordConfirm = req.body.passwordConfirm;
+    user.passwordResetToken = undefined;
+    user.passwordResetExpire = undefined;
+    await user.save();
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRETE, {
+      expiresIn: process.env.JWT_EXPIRES_IN
+    });
+
     res.status(200).json({
       status: 'success',
-      message: user
+      token
     });
   } catch (err) {
     res.status(403).json({
@@ -131,4 +195,26 @@ exports.forgetPassword = async (req, res, next) => {
   }
 };
 
-exports.resetPassword = (req, res, next) => {};
+exports.changePassword = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user.id).select('+password');
+    if (!user.correctPassword(req.body.password, user.password)) {
+      return next(new Error('The password is wrong'));
+    }
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRETE, {
+      expiresIn: process.env.JWT_EXPIRES_IN
+    });
+    user.password = req.body.newPassword;
+    user.passwordConfirm = req.body.newPasswordConfirm;
+    await user.save();
+    res.status(200).json({
+      status: 'success',
+      token
+    });
+  } catch (err) {
+    res.status(403).json({
+      status: 'fail',
+      message: err.message
+    });
+  }
+};
