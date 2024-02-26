@@ -76,7 +76,26 @@ const tourSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
       select: false
-    }
+    },
+    location: [
+      {
+        type: {
+          type: String,
+          default: 'Point',
+          enum: ['Point']
+        },
+        coordinates: [Number],
+        address: String,
+        description: String,
+        day: Number
+      }
+    ],
+    guides: [
+      {
+        type: mongoose.Schema.ObjectId,
+        ref: 'user'
+      }
+    ]
   },
   {
     toJSON: { virtuals: true },
@@ -86,6 +105,12 @@ const tourSchema = new mongoose.Schema(
 
 tourSchema.virtual('durationWeek').get(function() {
   return this.duration / 7;
+});
+
+tourSchema.virtual('reviews', {
+  ref: 'Review',
+  foreignField: 'tour',
+  localField: '_id'
 });
 
 tourSchema.pre('save', function(next) {
@@ -99,7 +124,11 @@ tourSchema.pre(/^find/, function(next) {
   next();
 });
 
-tourSchema.post(/^find/, function(doc, next) {
+tourSchema.pre(/^find/, function(next) {
+  this.populate({
+    path: 'guides',
+    select: '-__v -passwordChangedAt'
+  });
   next();
 });
 

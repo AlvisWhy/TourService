@@ -8,6 +8,7 @@ const hpp = require('hpp');
 
 const tourRouter = require('./routes/tourRoutes');
 const userRouter = require('./routes/userRoutes');
+const reviewRouter = require('./routes/reviewRoutes');
 
 const app = express();
 // 1) MIDDLEWARES
@@ -29,7 +30,7 @@ app.use(mongoSanitize());
 app.use(xss());
 app.use(
   hpp({
-    whitelist: ['duration']
+    whitelist: ['duration', 'ratingQuailty', 'price', 'difficulty']
   })
 );
 app.use(express.static(`${__dirname}/public`));
@@ -42,5 +43,6 @@ app.use((req, res, next) => {
 // 3) ROUTES
 app.use('/api/v1/tours', tourRouter);
 app.use('/api/v1/users', userRouter);
+app.use('/api/v1/reviews', reviewRouter);
 
 module.exports = app;

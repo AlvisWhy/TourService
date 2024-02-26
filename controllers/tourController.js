@@ -1,4 +1,3 @@
-const fs = require('fs');
 const Tour = require('./../models/tourModel');
 const APIFeatures = require('./../utils/apiFeatures');
 
@@ -41,9 +40,12 @@ exports.getAllTours = async (req, res) => {
   }
 };
 
-exports.getTour = async (req, res) => {
+exports.getTour = async (req, res, next) => {
   try {
-    const tour = await Tour.findById(req.params.id);
+    const tour = await Tour.findById(req.params.id).populate('reviews');
+    if (!tour) {
+      return next(new Error('No trip Found'));
+    }
     res.status(200).json({
       status: 'success',
       data: tour
