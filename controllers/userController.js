@@ -1,4 +1,5 @@
 const User = require('./../models/userModel');
+const factory = require('./handlerFactory');
 
 const filterObj = (obj, ...allowFields) => {
   const newObj = {};
@@ -14,30 +15,18 @@ exports.getAllUsers = (req, res) => {
     message: 'This route is not yet defined!'
   });
 };
-exports.getUser = (req, res) => {
-  res.status(500).json({
-    status: 'error',
-    message: 'This route is not yet defined!'
-  });
-};
+
+exports.getUser = factory.getOne(User);
+
 exports.createUser = (req, res) => {
   res.status(500).json({
     status: 'error',
-    message: 'This route is not yet defined!'
+    message: 'This route is not yet defined! Please user sign up instead'
   });
 };
-exports.updateUser = (req, res) => {
-  res.status(500).json({
-    status: 'error',
-    message: 'This route is not yet defined!'
-  });
-};
-exports.deleteUser = (req, res) => {
-  res.status(500).json({
-    status: 'error',
-    message: 'This route is not yet defined!'
-  });
-};
+
+exports.updateUser = factory.updateOne(User);
+exports.deleteUser = factory.deleteOne(User);
 
 exports.deleteMe = async (req, res, next) => {
   await User.findByIdAndUpdate(req.user.id, { active: false });
