@@ -41,7 +41,7 @@ exports.signup = async (req, res, next) => {
     console.log(err);
     res.status(500).json({
       status: 'error',
-      message: err
+      message: err.message
     });
   }
 };
@@ -63,7 +63,7 @@ exports.login = async (req, res, next) => {
   } catch (err) {
     res.status(500).json({
       status: 'error',
-      message: err
+      message: err.message
     });
   }
 };

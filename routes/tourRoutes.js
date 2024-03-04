@@ -14,18 +14,29 @@ router
 router.route('/tour-stats').get(tourController.getTourStats);
 router.route('/monthly-plan/:year').get(tourController.getMonthlyPlan);
 
+router.use(authController.protect);
+
 router
   .route('/')
-  .get(authController.protect, tourController.getAllTours)
-  .post(tourController.createTour);
+  .get(tourController.getAllTours)
+  .post(
+    authController.restrictTo('admin', 'lead-guide'),
+    tourController.createTour
+  );
+
+router
+  .route('/tours-within/:distance/center/:latlng/unit/:unit')
+  .get(tourController.getToursWithin);
 
 router
   .route('/:id')
   .get(tourController.getTour)
-  .patch(tourController.updateTour)
+  .patch(
+    authController.restrictTo('admin', 'lead-guide', 'guide'),
+    tourController.updateTour
+  )
   .delete(
-    authController.protect,
-    authController.restrictTo('admin', 'leadguide'),
+    authController.restrictTo('admin', 'lead-guide'),
     tourController.deleteTour
   );
 

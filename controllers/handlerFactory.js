@@ -13,7 +13,7 @@ exports.deleteOne = Model => async (req, res, next) => {
   } catch (err) {
     res.status(500).send({
       status: 'fail',
-      message: err
+      message: err.message
     });
   }
 };
@@ -33,7 +33,7 @@ exports.updateOne = Model => async (req, res) => {
   } catch (err) {
     res.status(500).send({
       status: 'fail',
-      message: err
+      message: err.message
     });
   }
 };
@@ -50,7 +50,7 @@ exports.createOne = Model => async (req, res) => {
   } catch (err) {
     res.status(500).send({
       status: 'fail',
-      message: err
+      message: err.message
     });
   }
 };
@@ -70,7 +70,7 @@ exports.getOne = (Model, popOptions) => async (req, res, next) => {
   } catch (err) {
     res.status(404).json({
       status: 'fail',
-      message: err
+      message: err.message
     });
   }
 };
@@ -95,7 +95,7 @@ exports.getAll = Model => async (req, res) => {
   } catch (err) {
     res.status(404).json({
       status: 'fail',
-      message: err
+      message: err.message
     });
   }
 };
