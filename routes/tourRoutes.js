@@ -16,8 +16,6 @@ router.route('/monthly-plan/:year').get(tourController.getMonthlyPlan);
 
 router.route('/distances/:latlng/unit/:unit').get(tourController.getDistance);
 
-router.use(authController.protect);
-
 router
   .route('/')
   .get(tourController.getAllTours)

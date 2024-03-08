@@ -58,7 +58,6 @@ exports.login = async (req, res, next) => {
     if (!user || !(await user.correctPassword(password, user.password))) {
       return next(new Error('Incorrect email or password'));
     }
-
     createSendToken(user, 200, res);
   } catch (err) {
     res.status(500).json({
@@ -76,11 +75,13 @@ exports.protect = async (req, res, next) => {
       req.headers.authorization.startsWith('Bearer')
     ) {
       token = req.headers.authorization.split(' ')[1];
+    } else if (req.cookies.jwt) {
+      token = req.cookies.jwt;
     }
+
     if (!token) {
       return next(new Error('please log in to get access!'));
     }
-
     const decode = jwt.verify(token, process.env.JWT_SECRETE);
 
     const freshUser = await User.findById(decode.id);
@@ -100,6 +101,25 @@ exports.protect = async (req, res, next) => {
       message: err.message
     });
   }
+};
+
+exports.isLoggedIn = async (req, res, next) => {
+  if (req.cookies.jwt) {
+    const decode = jwt.verify(req.cookies.jwt, process.env.JWT_SECRETE);
+
+    const freshUser = await User.findById(decode.id);
+    if (!freshUser) {
+      return next();
+    }
+
+    if (freshUser.changedPasswordAfter(decode.iat)) {
+      return next();
+    }
+
+    res.locals.user = freshUser;
+    return next();
+  }
+  next();
 };
 
 exports.restrictTo = (...roles) => {

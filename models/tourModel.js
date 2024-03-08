@@ -78,7 +78,7 @@ const tourSchema = new mongoose.Schema(
       default: false,
       select: false
     },
-    location: [
+    locations: [
       {
         type: {
           type: String,
