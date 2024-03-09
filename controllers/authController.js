@@ -13,7 +13,7 @@ const createSendToken = (user, statusCode, res) => {
   const cookieOptions = {
     expires:
       Date.now() + process.env.JWT_COOKIE_EXPIRES_IN * 24 * 60 * 60 * 1000,
-    hteepOnly: true
+    httpOnly: true
   };
   if (process.env.NODE_ENV === 'production') cookieOptions.secure = true;
   res.cookie('jwt', token, cookieOptions);
@@ -67,6 +67,14 @@ exports.login = async (req, res, next) => {
   }
 };
 
+exports.logout = (req, res) => {
+  res.cookie('jwt', 'loggedout', {
+    expires: new Date(Date.now() + 10 * 1000),
+    httpOnly: true
+  });
+  res.status(200).json({ status: 'success' });
+};
+
 exports.protect = async (req, res, next) => {
   try {
     let token;
@@ -93,6 +101,7 @@ exports.protect = async (req, res, next) => {
       return next(new Error('The password has beeen changed'));
     }
 
+    res.locals.user = freshUser;
     req.user = freshUser;
     next();
   } catch (err) {
@@ -105,19 +114,23 @@ exports.protect = async (req, res, next) => {
 
 exports.isLoggedIn = async (req, res, next) => {
   if (req.cookies.jwt) {
-    const decode = jwt.verify(req.cookies.jwt, process.env.JWT_SECRETE);
+    try {
+      const decode = jwt.verify(req.cookies.jwt, process.env.JWT_SECRETE);
 
-    const freshUser = await User.findById(decode.id);
-    if (!freshUser) {
+      const freshUser = await User.findById(decode.id);
+      if (!freshUser) {
+        return next();
+      }
+
+      if (freshUser.changedPasswordAfter(decode.iat)) {
+        return next();
+      }
+
+      res.locals.user = freshUser;
+      return next();
+    } catch (err) {
       return next();
     }
-
-    if (freshUser.changedPasswordAfter(decode.iat)) {
-      return next();
-    }
-
-    res.locals.user = freshUser;
-    return next();
   }
   next();
 };

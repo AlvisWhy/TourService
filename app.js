@@ -56,4 +56,20 @@ app.use('/api/v1/tours', tourRouter);
 app.use('/api/v1/users', userRouter);
 app.use('/api/v1/reviews', reviewRouter);
 
+app.use((err, req, res, next) => {
+  if (req.originalUrl.startsWith('/api')) {
+    err.statusCode = err.statusCode || 500;
+    err.status = err.status || 500;
+    res.status(err.statusCode).json({
+      status: err.status,
+      message: err.message
+    });
+  } else {
+    res.status(500).render('error', {
+      title: 'Something went wrong',
+      msg: err.message
+    });
+  }
+});
+
 module.exports = app;
