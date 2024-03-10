@@ -17,7 +17,8 @@ const userScheme = mongoose.Schema({
     validate: [validator.isEmail, 'Please input valid email']
   },
   photo: {
-    type: String
+    type: String,
+    default: 'default.jpg'
   },
   role: {
     type: String,
