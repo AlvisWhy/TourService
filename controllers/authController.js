@@ -34,7 +34,6 @@ exports.signup = async (req, res, next) => {
 
     createSendToken(newUser, 200, res);
   } catch (err) {
-    console.log(err);
     res.status(500).json({
       status: 'error',
       message: err.message

@@ -43,7 +43,6 @@ if (userDataForm) {
 }
 
 if (userPasswordForm) {
-  console.log(userPasswordForm)
   userPasswordForm.addEventListener('submit', async e => {
     e.preventDefault();
     document.querySelector('.btn--save-password').textContent = 'Updating...'
