@@ -6,6 +6,7 @@ const helmet = require('helmet');
 const csp = require('express-csp');
 const mongoSanitize = require('express-mongo-sanitize');
 const xss = require('xss-clean');
+const cors = require('cors');
 const hpp = require('hpp');
 const compression = require('compression');
 const cookieParser = require('cookie-parser');
@@ -21,6 +22,13 @@ const app = express();
 app.set('view engine', 'pug');
 app.set('views', path.join(__dirname, 'views'));
 
+app.use(cors());
+app.use(
+  cors({
+    origin: 'http://www.natour.com'
+  })
+);
+app.options('*', cors());
 // 1) MIDDLEWARES
 //app.use(helmet());
 csp.extend(app, {
